@@ -1,0 +1,584 @@
+/*--- VARIÁVEIS GERAIS -------------------------------------------------------*/
+
+Definir Cursor Cur_E210CEI;
+Definir Alfa vaSql;
+Definir Alfa vaRetorno;
+Definir Alfa vaMais;
+Definir Alfa vaTemMais;
+Definir Alfa DesLinha;
+Definir numero vnTemp;
+Definir Alfa vaTemp;
+Definir Alfa vaIniCod128;
+Definir Alfa vaSqlMarca;
+Definir Alfa vaMarca;
+Definir Alfa vaTempDimPro;
+Definir Alfa vaTempDimVol;
+Definir Alfa vaTempErro;
+Definir Alfa vaCodEmp;
+Definir numero vnQtdUti;
+Definir Alfa vaCorBarEtq;
+Definir Alfa vaCodIdi;
+Definir Alfa vaDia;
+Definir Alfa vaMes;
+Definir Alfa vaAno;
+
+
+/*--- VARIÁVEIS DO PRODUTO ---------------------------------------------------*/
+
+Definir Alfa vaCodPro;
+Definir Alfa vaCodProCli;
+Definir Alfa vaDesProCli;
+Definir Alfa vaObsPpcCli;
+Definir Alfa vaObsPpcCli2;
+Definir Alfa vaDesPro;
+Definir Alfa vaCodDer; 
+Definir Alfa vaDesDer;
+Definir Alfa vaPeso;
+Definir Alfa vaDimPro;
+Definir Alfa vaCodProIpd;
+
+
+/*--- VARIÁVEIS DO VOLUME ----------------------------------------------------*/
+
+Definir numero vnTotalVol;
+Definir Alfa vaTotalVol;
+Definir Alfa vaVolume;
+Definir numero vnCodBar;
+Definir numero vnCodBarVol;
+Definir Alfa vaCodBar;
+Definir Alfa vaCodBar2;
+Definir Alfa vaCodBarVol;
+Definir Alfa vaDesVol;
+Definir Alfa vaPesVolL;
+Definir Alfa vaPesVolB;
+Definir Alfa vaQtdeVol;
+Definir Alfa vaAltVol;
+Definir Alfa vaLarVol;
+Definir Alfa vaComVol;
+Definir numero vnAltVol;
+Definir numero vnLarVol;
+Definir numero vnComVol;
+Definir Alfa vaDimVol;
+
+
+/*--- VARIÁVEIS DO PEDIDO/CARGA/CLIENTE --------------------------------------*/ 
+
+Definir Alfa vaPedCli;
+Definir Alfa vaNumAne;
+Definir Alfa vaCodCli;
+Definir Alfa vaNomeCliente;
+
+/*--- DEFINIÇÃO DE FUNÇÕES ---------------------------------------------------*/
+
+Definir Funcao VerificarCarga(); 
+
+
+/*--- INICIALIZAÇÃO DE VARIÁVEIS ---------------------------------------------*/
+
+vnCodEmp      = E135PES.CodEmp;
+vnCodCli      = E085CLI.CodCli;
+vaNomeCliente = E085CLI.NomCli;
+vaPedCli      = E120PED.PedCli;
+vaCodPro      = E135PES.CodPro;
+vaDesProCli   = E075PRO.DesPro;
+vaCodDer      = E135PES.CodDer;
+vaDesDer      = E075Der.DesDer;
+vaCodProIpd   = E120IPD.CodPro;
+vnCont        = 0;
+vnQtdeVol     = 0;
+vnTipEtq      = 0;
+
+/*--- CHAMADA DE FUNÇÕES -----------------------------------------------------*/
+
+IntParaAlfa(vnCodEmp,vaCodEmp);
+IntParaAlfa(vnCodCli,vaCodCli);
+IntParaAlfa(E120PED.Usu_CodIdi,vaCodIdi);
+RetiraAcentuacao(vaNomeCliente);
+IntParaAlfa(E135PES.NumAne,vaNumAne);
+DesMontaData(DatSis,vnDia, vnMes, vnAno);
+ExtensoMes(DatSis,vaMes);
+IntParaALfa(vnAno,vaAno);
+
+/*--- TESTE ------------------------------------------------------------------*/
+
+/*----------------------------------------------------------------------------*/
+
+
+/*----------------------------------------------------------------------------*/
+/*---------------------------- Começo do Código ------------------------------*/
+/*----------------------------------------------------------------------------*/
+
+
+
+/*----------------------------------------------------------------------------*/
+/*----------------------------- Fim do Código --------------------------------*/
+/*----------------------------------------------------------------------------*/
+
+
+/*--- DIMENSÕES DO PRODUTO ACABADO---------------------------------*/
+
+vnTemp = E075PRO.USU_AltPro * 100;
+IntParaAlfa(vnTemp, vaTempDimPro);
+vaDimPro = vaTempDimPro + "cm X ";
+
+vnTemp = E075PRO.USU_LarPro * 100;
+IntParaAlfa(vnTemp, vaTempDimPro);
+vaDimPro = vaDimPro + vaTempDimPro + "cm X ";
+
+vnTemp = E075PRO.USU_ComPro * 100;
+IntParaAlfa(vnTemp, vaTempDimPro);
+vaDimPro = vaDimPro + vaTempDimPro + "cm";
+
+
+
+@------BUSCA A MINIATURA DO PRODUTO---------------------------------@
+Se ((E075PRO.CODORI = "65") OU (E135PES.CMPKIT <> "S")) {
+	Definir Alfa vaArquivo;
+	Definir Alfa vaMiniatura;
+	Definir numero vnRet;
+	Definir numero vArq;
+	Definir Alfa vaLinha; vaLinha = "";
+	
+	vaArquivo = "\\\\aplicacaonovo\\Senior\\Sapiens\\miniaturas_produtos\\" + E075PRO.CODPRO + ".txt";
+	Se (ArqExiste(vaArquivo))
+	{
+	  vArq = Abrir(vaArquivo, Lernl);
+	  vLeu = Lernl(vArq, vaMiniatura);
+	  Enquanto(vLeu=1)
+	  {
+	     DesLinha = vaMiniatura; ListaSecao("Adicional_Linha");
+	     vLeu = Lernl(vArq, vaMiniatura);
+	  }   
+	  Fechar(vArq);
+	}
+	Senao
+	{  
+	  vaArquivo = "O produto " + E135PES.CODPRO + " não possui miniatura no servidor. Entre em contato com o setor de Exportação ou com o T.I."; 
+	  @Mensagem(Erro,vaArquivo);@
+	}
+  
+  @-------------------------------------------------------------------@ 
+  
+  
+  
+  /*--- TRADUÇÃO DOS PRODUTOS PARA INGLÊS --------------------------------------*/
+  /*    USU_T075PID.USU_CodIdi
+        1 - Espanhol
+        2 - Inglês       */
+  
+  Cur_E210CEI.Sql" SELECT USU_T075PID.USU_DESPID, USU_T075DID.USU_DESDID \
+                    FROM USU_T075PID, USU_T075DID \
+                    WHERE USU_T075DID.USU_CODEMP = USU_T075DID.USU_CODEMP \
+                    AND USU_T075DID.USU_CODIDI = USU_T075PID.USU_CODIDI \ 
+                    AND USU_T075PID.USU_CodEmp = :vaCodEmp \
+                    AND USU_T075PID.USU_CodPro = :vaCodPro \
+                    AND USU_T075DID.USU_CodDer = :vaCodDer \
+                    AND USU_T075PID.USU_CodIdi = :vaCodIdi";    
+  Cur_E210CEI.AbrirCursor();
+  Se(Cur_E210CEI.Achou)
+  {  
+     vaDesProCli = Cur_E210CEI.USU_DESPID;
+     vaDesDer = Cur_E210CEI.USU_DESDID;
+  }
+  Cur_E210CEI.FecharCursor();
+  RetiraAcentuacao(vaDesPro);
+  RetiraAcentuacao(vaDesDer);
+  
+  
+  
+  /*--- DADOS DA LIGAÇÃO PRODUTO X CLIENTE -------------------------------------*/
+  
+  vaSql = "SELECT USU_CODBAR FROM E075PPC \ 
+              WHERE E075PPC.CodEmp = "+vaCodEmp+" \
+              AND E075PPC.CodPro = '"+vaCodPro+"' \
+              AND E075PPC.CodDer = '"+vaCodDer+"' \
+              AND E075PPC.CodCli = "+vaCodCli;
+                     
+  Definir Alfa xCursor;
+  SQL_Criar(xCursor);
+  SQL_DefinirComando(xCursor,vaSql);
+  SQL_AbrirCursor(xCursor);
+  Se (SQL_EOF(xCursor) = 0) {
+    SQL_RetornarAlfa(xCursor,"USU_CODBAR",vaObsPpcCli);          
+  }
+  Senao {
+    vaTempErro = "Não foi encontrada ligação do produto " + E135PES.CODPRO + "/" + E135PES.CODDER + " com o cliente. Entre em contado com o Dep. Comercial.";
+    @Mensagem(Erro, vaTempErro); @
+  }
+  SQL_FecharCursor(xCursor);
+  SQL_Destruir(xCursor);
+  
+  
+  
+  
+  
+  @---DESCRIÇÃO EM DUAS LINHAS--- PROCURANDO O ÚLTIMO ESPAÇO EM BRANCO PARA CORTAR---@
+  
+  Definir Alfa vaCaractere;    @--variável de texto que recebe os caracteres do final para o começo, no laço--@  
+  Definir numero iPosicao;     @--contador para encontrar a posição do último espaço em branco--@
+  Definir Alfa vaDesProCli2;   
+  iPosicao = 46;               @--largura do texto que cabe na primeira linha--@
+    
+  TamanhoAlfa(vaDesProCli, vnTam);
+  Se (vnTam > iPosicao) {  @--se o tamanho da linha é maior que o limite configurado acima--@
+    vaCaractere = vaDesProCli;    @--atribuindo a variável que irá procurar o espaço em branco--@
+    vaDesProCli2 = vaDesProCli;   @--atribuindo a segunda linha para cortar depois--@
+    CopiarAlfa(vaCaractere, iPosicao, 1);  
+    Enquanto (vaCaractere <> " ")
+    {
+      iPosicao--; 
+      vaCaractere = vaDesProCli;
+      CopiarAlfa(vaCaractere, iPosicao, 1);
+    }
+    
+    CopiarAlfa(vaDesProCli, 1, iPosicao);
+    iPosicao++;
+    CopiarAlfa(vaDesProCli2, iPosicao, 150);
+  }  
+  Senao
+    vaDesProCli2 = " ";
+  
+  @-----------------------------------------------------@
+}  
+  
+
+
+/*--- IMPRESSÃO DO KIT -------------------------------------------------------*/
+Se (E075PRO.CODORI = "65") {    
+  
+  Se(EQtdProd=0) {
+    vnQtdPed = E135PES.QtdPed; }
+  Senao {
+    vnQtdPed = EQtdProd;  }
+  
+
+  @---Quantidade Total de Volumes---@
+  vaSql = "SUM(Ctm1.QTDUTI)\                                 
+           FROM E075PRO Pro1, E075DER Der1, E700MOD Mod1, E700CTM Ctm1, E075PRO Pro2, E075DER Der2,\
+           E700MOD Mod2, E700CTM Ctm2, E083ORI Ori2, E075PRO Pro3, E075DER Der3, E083ORI Ori3\                               
+           WHERE Pro1.INDVEN='S'\                                                     
+           AND Der1.CODEMP=Pro1.CODEMP \                                                
+           AND Der1.CODPRO=Pro1.CODPRO \                                                
+           AND Mod1.CODEMP=Pro1.CODEMP   AND Mod1.CODMOD=Pro1.CODMOD \                  
+           AND Ctm1.CODEMP=Mod1.CODEMP   AND Ctm1.CODMOD=Mod1.CODMOD \                  
+           AND Ctm1.CODDER=Der1.CODDER \                                                
+           AND Pro2.CODEMP=Ctm1.CODEMP   AND Pro2.CODPRO=Ctm1.CODCMP \                  
+           AND Der2.CODEMP=Ctm1.CODEMP   AND Der2.CODPRO=Ctm1.CODCMP \                  
+           AND Der2.CODDER=Ctm1.DERCMP \                                                
+           AND Ori2.CODEMP=Pro2.CODEMP   AND Ori2.CODORI=Pro2.CODORI \                  
+           AND Mod2.CODEMP=Pro2.CODEMP   AND Mod2.CODMOD=Pro2.CODMOD \                
+           AND Ctm2.CODEMP=Mod2.CODEMP   AND Ctm2.CODMOD=Mod2.CODMOD \                  
+           AND Ctm2.CODDER=Der2.CODDER \                                                
+           AND Pro3.CODEMP=Ctm2.CODEMP   AND Pro3.CODPRO=Ctm2.CODCMP \                  
+           AND Pro3.INDVEN='S' \                                                        
+           AND Der3.CODEMP=Ctm2.CODEMP   AND Der3.CODPRO=Ctm2.CODCMP \                  
+           AND Der3.CODDER=Ctm2.DERCMP \                                                
+           AND Ori3.CODEMP=Pro3.CODEMP   AND Ori3.CODORI=Pro3.CODORI \                  
+           AND Pro1.CODPRO = '"+vaCodPro+"' \                                            
+           AND Der1.CODDER = '"+vaCodDer+"'"; 
+   
+  SelecaoTabelas(vaSql,vaRetorno,vaMais);
+  AlfaParaInt(vaRetorno,vnQtdeVol);  
+
+
+  ConverteMascara(1,vnQtdeVol,vaTotalVol,"9"); 
+  vnNumVol = 0;
+
+   
+  @---Dados dos Volumes do Kit---@            
+  vaSql = "SELECT  2 as Nivel, \
+             Pro1.CODEMP AS CodEmp, \
+             Ctm1.SEQMOD, \
+             Pro1.CODPRO AS PROKIT, \
+             Der1.CODDER AS DERKIT, \
+             Der1.CODBAR AS BARKIT, \
+             Pro2.CODPRO AS PRO60, \
+             Der2.CODDER AS DER60, \
+             Pro3.CODPRO AS PROCMP, \
+             Der3.CODDER AS DERCMP, \
+             Pro3.DESPRO AS DESVOL, \
+             Pro3.PESBRU AS PESVOLBRU, \
+             Pro3.PESLIQ AS PESVOLLIQ, \
+             Pro3.ALTPRO AS ALTVOL,    \
+             Pro3.LARPRO AS LARVOL,    \
+             Pro3.COMPRO AS COMVOL,    \             
+             Der3.CODBAR AS VOLBAR, \
+             Ctm1.QTDUTI AS QTDUTI  \
+           FROM E075PRO Pro1, E075DER Der1, E700MOD Mod1, E700CTM Ctm1, E075PRO Pro2, \
+           		E075DER Der2, E700MOD Mod2, E700CTM Ctm2, E083ORI Ori2, E075PRO Pro3, \
+           		E075DER Der3, E083ORI Ori3 \
+           WHERE Pro1.INDVEN='S' \                                          
+           AND Der1.CODEMP=Pro1.CODEMP AND Der1.CODPRO=Pro1.CODPRO \                                    
+           AND Mod1.CODEMP=Pro1.CODEMP AND Mod1.CODMOD=Pro1.CODMOD \      
+           AND Ctm1.CODEMP=Mod1.CODEMP AND Ctm1.CODMOD=Mod1.CODMOD AND Ctm1.CODDER=Der1.CODDER \                                    
+           AND Pro2.CODEMP=Ctm1.CODEMP AND Pro2.CODPRO=Ctm1.CODCMP \      
+           AND Der2.CODEMP=Ctm1.CODEMP AND Der2.CODPRO=Ctm1.CODCMP AND Der2.CODDER=Ctm1.DERCMP \                                    
+           AND Ori2.CODEMP=Pro2.CODEMP AND Ori2.CODORI=Pro2.CODORI \      
+           AND Mod2.CODEMP=Pro2.CODEMP AND Mod2.CODMOD=Pro2.CODMOD \      
+           AND Ctm2.CODEMP=Mod2.CODEMP AND Ctm2.CODMOD=Mod2.CODMOD AND Ctm2.CODDER=Der2.CODDER \                                    
+           AND Pro3.CODEMP=Ctm2.CODEMP AND Pro3.CODPRO=Ctm2.CODCMP AND Pro3.INDVEN='S' \                                            
+           AND Der3.CODEMP=Ctm2.CODEMP AND Der3.CODPRO=Ctm2.CODCMP AND Der3.CODDER=Ctm2.DERCMP \                                  
+           AND Ori3.CODEMP=Pro3.CODEMP AND Ori3.CODORI=Pro3.CODORI \
+           AND Pro1.CODEMP = "+vaCodEmp+"    \      
+           AND Pro1.CODPRO = '"+vaCodPro+"'   \                         
+           AND Der1.CODDER = '"+vaCodDer+"'";
+  
+
+  Definir Alfa xCursor2;
+  SQL_Criar(xCursor2);
+  SQL_DefinirComando(xCursor2,vaSql);
+  SQL_AbrirCursor(xCursor2);           
+  Enquanto(SQL_EOF(xCursor2) = 0)
+  {
+    SQL_RetornarInteiro(xCursor2,"QTDUTI",vnQtdUti);
+    Enquanto (vnQtdUti > 0)
+    {  
+      vnNumVol++;
+      vnCont = 0; 
+      Enquanto (vnCont < vnQtdPed)
+      {  
+  
+        @--Volumes--@
+        ConverteMascara(1,vnNumVol,vaVolume,"9");
+        
+        @--Códigos de Barras--@             
+        SQL_RetornarFlutuante(xCursor2,"BarKit",vnCodBar);
+        SQL_RetornarFlutuante(xCursor2,"VolBar",vnCodBarVol);
+        ConverteMascara(1,vnCodBar,vaCodBar,"9999999999999");
+        ConverteMascara(1,vnCodBarVol,vaCodBarVol,"9999999999999");
+        
+        TamanhoAlfa(vaCodBar,vnTemp);
+
+        Se ((vnTemp = 10) ou (vnTemp = 11))
+        {
+          vaCodBar2 = vaCodBar;
+          CopiarAlfa(vaCodBar,1,10);
+          CopiarAlfa(vaCodBar2,11,12);
+          vaCodBar = vaCodBar + ">6" + vaCodBar2;                    
+        }
+        
+        Se ((vnTemp = 12) ou (vnTemp = 13))
+        {
+          vaCodBar2 = vaCodBar;
+          CopiarAlfa(vaCodBar,1,12);
+          CopiarAlfa(vaCodBar2,13,15);
+          vaCodBar = vaCodBar + ">6" + vaCodBar2;                    
+        }     
+        
+        Se (vnNumVol >= 1) 
+           vaCodBar = vaCodBar + "-C" + vaVolume;
+        vaVolume = vaVolume+"/"+vaTotalVol ;        
+        LimpaEspacos(vaVolume);                   
+       
+        
+        @--Peso do volume--@
+        /*
+        SQL_RetornarFlutuante(xCursor2,"PesVolBru",vnTemp);
+        DecimalParaAlfa(vnTemp,vaPesVolB);
+        SQL_RetornarFlutuante(xCursor2,"PesVolLiq",vnTemp);
+        DecimalParaAlfa(vnTemp,vaPesVolL);          
+        ConverteMascara(1,vnPesBru,vaPeso,"zz9,999"); 
+        SQL_RetornarAlfa(xCursor2,"DESVOL",vaDesVol);
+        */
+        
+        @--Dimensões do volume--@
+        /*
+        SQL_RetornarFlutuante(xCursor2,"ALTVOL",vnAltVol);
+        DecimalParaAlfa(vnAltVol,vaAltVol);
+        SQL_RetornarFlutuante(xCursor2,"LARVOL",vnLarVol);
+        DecimalParaAlfa(vnLarVol,vaLarVol);
+        SQL_RetornarFlutuante(xCursor2,"COMVOL",vnComVol);
+        DecimalParaAlfa(vnComVol,vaComVol);
+        */
+         
+        Se((ENumVol=0) OU (vnNumVol=ENumVol))
+        { 
+               
+          DesLinha = "^XA"; ListaSecao("Adicional_Linha");
+          DesLinha = "^JMA^MMT^LS0^PR2~SD20^PW500^FS"; ListaSecao("Adicional_Linha");
+          DesLinha = "^FT10,910^XG000.GRF,1,1^FS"; ListaSecao("Adicional_Linha");                    @Miniatura@
+          DesLinha = "^FT280,850,0^A0B,22,22^FH^FD"+vaObsPpcCli+"^FS"; ListaSecao("Adicional_Linha");  @Código abaixo da Miniatura@                   
+          DesLinha = "^BY2,3,120^FT410,930^BCB,,Y,N^FD>;"+vaCodBar+"^FS"; ListaSecao("Adicional_Linha");  @Código de Barras@
+          @DesLinha = "^BY3,2,130^FT420,910^BEB,,Y,N^FD"+ vaCodBar +"^FS"; ListaSecao("Adicional_Linha");@  @Código de Barras@
+          DesLinha = "^FO50,580^GB390,0,2^FS"; ListaSecao("Adicional_Linha");                @Linha vertical@     
+
+          DesLinha = "^FT100,500,0^A0B,80,80^FH^FDSTREIGHTEX^FS"; ListaSecao("Adicional_Linha");  
+          DesLinha = "^FT160,560,0^A0B,26,22^FH^FD"+vaDesProCli+"^FS"; ListaSecao("Adicional_Linha");
+          DesLinha = "^FT200,560,0^A0B,26,22^FH^FD"+vaDesProCli2+"^FS"; ListaSecao("Adicional_Linha");          
+          DesLinha = "^FT250,420,0^A0B,26,26^FH^FD"+vaDimPro+"^FS"; ListaSecao("Adicional_Linha");                  
+          DesLinha = "^FT320,450,0^A0B,30,30^FH^FDCor: "+vaDesDer+"^FS"; ListaSecao("Adicional_Linha");                                     
+          DesLinha = "^FT370,530,0^A0B,30,30^FH^FDVol:  "+vaVolume+"^FS"; ListaSecao("Adicional_Linha");
+          DesLinha = "^FT370,230,0^A0B,30,30^FH^FD"+vaMes+"/"+vaAno+"^FS"; ListaSecao("Adicional_Linha");                    
+          DesLinha = "^FT420,530,0^A0B,30,30^FH^FDPedido: "+vaPedCli+"^FS"; ListaSecao("Adicional_Linha");
+          DesLinha = "^FT420,230,0^A0B,30,30^FH^FDLote: "+vaNumAne+"^FS"; ListaSecao("Adicional_Linha");           
+          
+          DesLinha = "^PQ1^FS^XZ"; ListaSecao("Adicional_Linha");    
+        }
+        vnCont++;
+      }
+      vnQtdUti--;
+    }
+    SQL_Proximo(xCursor2);
+  }
+  SQL_FecharCursor(xCursor2);
+  SQL_Destruir(xCursor2);
+}
+ 
+/*--- IMPRESSÃO DO PRODUTO 60 ------------------------------------------------*/
+Senao Se (E135PES.CMPKIT <> "S") {
+ 
+  Se(EQtdProd=0) {
+    vnQtdPed = E135PES.QtdPed; }
+  Senao {
+    vnQtdPed = EQtdProd;  }
+  
+
+  @---Quantidade Total de Volumes---@
+  vaSql = " COUNT(E210CEI.PROVOL) \
+                    FROM E210CEI, E075PRO, E075DER  \ 
+                    WHERE E210CEI.CODEMP="+vaCodEmp+"  \
+                    AND E210CEI.CODPRO = '"+vaCodPro+"'   \
+                    AND E210CEI.CODDER = '"+vaCodDer+"'   \
+                    AND E210CEI.SITREG = 'A'             \
+                    AND E075PRO.CodEmp = E210CEI.CODEMP  \
+                    AND E075PRO.CodPro = E210CEI.CODPRO  \
+                    AND E075DER.CodEmp = E210CEI.CODEMP  \ 
+                    AND E075DER.CodPro = E075PRO.CodPro  \
+                    AND E075DER.CodDer = E210CEI.CODDER  \
+                       "; 
+   
+  SelecaoTabelas(vaSql,vaRetorno,vaMais);
+  AlfaParaInt(vaRetorno,vnQtdeVol);
+  
+  ConverteMascara(1,vnQtdeVol,vaTotalVol,"9"); 
+  vnNumVol = 0;
+  
+   
+  @---Dados dos Volumes---@            
+  vaSql = " SELECT  CEI.PROVOL, \
+                    CEI.DERVOL, \
+                    CEI.CODPRO, \
+                    CEI.CODDER, \
+                    PRO.PesBru AS PESVOLBRU, \
+                    PRO.PesLiq AS PESVOLLIQ, \
+                    PRO.QtdVol, \
+                    PRO.DesPro AS DESVOL, \
+                    DER.CodBar AS VOLBAR, \
+                    PRO.AltPro AS ALTVOL, \
+                    PRO.LarPro AS LARVOL, \
+                    PRO.ComPro AS COMVOL  \
+                FROM E210CEI CEI, E075PRO PRO, E075DER DER  \ 
+                WHERE CEI.CODEMP="+vaCodEmp+"    \
+                AND CEI.CODPRO = '"+vaCodPro+"'  \
+                AND CEI.CODDER = '"+vaCodDer+"'  \
+                AND PRO.CodEmp = CEI.CODEMP  \
+                AND PRO.CodPro = CEI.PROVOL  \
+                AND DER.CodEmp = CEI.CODEMP  \ 
+                AND DER.CodPro = CEI.PROVOL  \
+                AND DER.CodDer = CEI.DERVOL  \
+                AND CEI.SITREG = 'A'";
+  
+
+  Definir Alfa xCursor2;
+  SQL_Criar(xCursor2);
+  SQL_DefinirComando(xCursor2,vaSql);
+  SQL_AbrirCursor(xCursor2);           
+  Enquanto(SQL_EOF(xCursor2) = 0)
+  {  
+    vnNumVol++;
+    vnCont = 0; 
+    Enquanto (vnCont < vnQtdPed)
+    {
+        
+        @--Volumes--@
+        @--Códigos de Barras--@             
+        @SQL_RetornarFlutuante(xCursor2,"BarKit",vnCodBar);@
+        SQL_RetornarFlutuante(xCursor2,"VolBar",vnCodBarVol);
+        ConverteMascara(1,vnCodBar,vaCodBar,"9999999999999");
+        ConverteMascara(1,vnCodBarVol,vaCodBarVol,"9999999999999");
+        
+        TamanhoAlfa(vaCodBar,vnTemp);
+
+        Se ((vnTemp = 10) ou (vnTemp = 11))
+        {
+          vaCodBar2 = vaCodBar;
+          CopiarAlfa(vaCodBar,1,8);
+          CopiarAlfa(vaCodBar2,8,12);
+          vaCodBar = vaCodBar + ">6" + vaCodBar2;                    
+        }
+        
+        Se ((vnTemp = 12) ou (vnTemp = 13))
+        {
+          vaCodBar2 = vaCodBar;
+          CopiarAlfa(vaCodBar,1,10);
+          CopiarAlfa(vaCodBar2,10,15);
+          vaCodBar = vaCodBar + ">6" + vaCodBar2;                    
+        }     
+        
+        Se (vnNumVol > 1) 
+           vaCodBar = vaCodBar + "-C" + vaVolume;
+        vaVolume = vaVolume+"/"+vaTotalVol ;        
+        LimpaEspacos(vaVolume);   
+        
+        
+      @--Peso do volume--@
+      /*
+      SQL_RetornarFlutuante(xCursor2,"PesVolBru",vnTemp);
+      DecimalParaAlfa(vnTemp,vaPesVolB);
+      SQL_RetornarFlutuante(xCursor2,"PesVolLiq",vnTemp);
+      DecimalParaAlfa(vnTemp,vaPesVolL);          
+      ConverteMascara(1,vnPesBru,vaPeso,"zz9,999"); 
+      SQL_RetornarAlfa(xCursor2,"DESVOL",vaDesVol);
+      */
+
+
+      @--Dimensões do volume--@
+      /*
+      SQL_RetornarFlutuante(xCursor2,"ALTVOL",vnAltVol);
+      DecimalParaAlfa(vnAltVol,vaAltVol);
+      SQL_RetornarFlutuante(xCursor2,"LARVOL",vnLarVol);
+      DecimalParaAlfa(vnLarVol,vaLarVol);
+      SQL_RetornarFlutuante(xCursor2,"COMVOL",vnComVol);
+      DecimalParaAlfa(vnComVol,vaComVol);
+      */
+ 
+         
+      Se((ENumVol=0) OU (vnNumVol=ENumVol))
+      {
+          DesLinha = "^XA"; ListaSecao("Adicional_Linha");
+          DesLinha = "^JMA^MMT^LS0^PR2~SD20^PW500^FS"; ListaSecao("Adicional_Linha");
+          DesLinha = "^FT10,910^XG000.GRF,1,1^FS"; ListaSecao("Adicional_Linha");                    @Miniatura@
+          DesLinha = "^FT280,850,0^A0B,22,22^FH^FD"+vaObsPpcCli+"^FS"; ListaSecao("Adicional_Linha");  @Código abaixo da Miniatura@                   
+          DesLinha = "^BY2,3,120^FT410,930^BCB,,Y,N^FD>;"+vaCodBar+"^FS"; ListaSecao("Adicional_Linha");  @Código de Barras@
+          @DesLinha = "^BY3,2,130^FT420,910^BEB,,Y,N^FD"+ vaCodBar +"^FS"; ListaSecao("Adicional_Linha");@  @Código de Barras@
+          DesLinha = "^FO50,580^GB390,0,2^FS"; ListaSecao("Adicional_Linha");                @Linha vertical@     
+
+          DesLinha = "^FT100,500,0^A0B,80,80^FH^FDSTREIGHTEX^FS"; ListaSecao("Adicional_Linha");  
+          DesLinha = "^FT160,560,0^A0B,26,22^FH^FD"+vaDesProCli+"^FS"; ListaSecao("Adicional_Linha");
+          DesLinha = "^FT200,560,0^A0B,26,22^FH^FD"+vaDesProCli2+"^FS"; ListaSecao("Adicional_Linha");          
+          DesLinha = "^FT250,420,0^A0B,26,26^FH^FD"+vaDimPro+"^FS"; ListaSecao("Adicional_Linha");                  
+          DesLinha = "^FT320,450,0^A0B,30,30^FH^FDCor: "+vaDesDer+"^FS"; ListaSecao("Adicional_Linha");                                     
+          DesLinha = "^FT370,530,0^A0B,30,30^FH^FDVol:  "+vaVolume+"^FS"; ListaSecao("Adicional_Linha");
+          DesLinha = "^FT370,230,0^A0B,30,30^FH^FD"+vaMes+"/"+vaAno+"^FS"; ListaSecao("Adicional_Linha");                    
+          DesLinha = "^FT420,530,0^A0B,30,30^FH^FDPedido: "+vaPedCli+"^FS"; ListaSecao("Adicional_Linha");
+          DesLinha = "^FT420,230,0^A0B,30,30^FH^FDLote: "+vaNumAne+"^FS"; ListaSecao("Adicional_Linha");           
+          
+          DesLinha = "^PQ1^FS^XZ"; ListaSecao("Adicional_Linha");      
+      }
+      vnCont++;
+    }
+    SQL_Proximo(xCursor2);
+  }
+  SQL_FecharCursor(xCursor2);
+  SQL_Destruir(xCursor2);
+}  
+
+
+
+DesLinha = "^XA^ID000.GRF^FS^XZ"; ListaSecao("Adicional_Linha"); @Descarrega Miniatura@  
+
+
+
+/*--- FUNÇÕES ----------------------------------------------------------------*/
+
+
